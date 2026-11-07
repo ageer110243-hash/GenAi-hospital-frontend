@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ---------- Design tokens (Tailwind v4) ---------- */
+@theme {
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  /* Dashboards use a cleaner, modern sans */
+  --font-dashboard: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Teal – primary brand */
+  --color-brand-50: #effaf8;
+  --color-brand-100: #d5f2ee;
+  --color-brand-200: #a9e4dc;
+  --color-brand-300: #72cfc5;
+  --color-brand-400: #3fb5aa;
+  --color-brand-500: #1f9a91;
+  --color-brand-600: #137c76;
+  --color-brand-700: #0f635f;
+  --color-brand-800: #0e4f4d;
+  --color-brand-900: #0c4140;
+
+  /* Deep navy – text & dark sections */
+  --color-navy-700: #1b3a5c;
+  --color-navy-800: #12304f;
+  --color-navy-900: #0b2239;
+  --color-navy-950: #071727;
+
+  /* Champagne gold – accent */
+  --color-gold-300: #e6cf8f;
+  --color-gold-400: #d9b862;
+  --color-gold-500: #c9a24b;
+  --color-gold-600: #a8832f;
+
+  /* Warm ivory – page background */
+  --color-ivory: #faf8f4;
+  --color-ivory-dark: #f1ede4;
+
+  /* Dashboard background */
+  --color-surface: #f4f7f8;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-ivory font-sans text-navy-900 antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+  }
+  /* inside dashboards headings use the dashboard font too */
+  .font-dashboard h1,
+  .font-dashboard h2,
+  .font-dashboard h3,
+  .font-dashboard h4 {
+    font-family: var(--font-dashboard);
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Reusable component classes */
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply h-px w-8 bg-gold-500;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 transition hover:bg-brand-800 hover:-translate-y-0.5;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-navy-900/15 bg-white/60 px-6 py-3 text-sm font-semibold text-navy-900 backdrop-blur transition hover:border-brand-600 hover:text-brand-700;
+  }
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-navy-950 transition hover:bg-gold-400 hover:-translate-y-0.5;
+  }
+}
