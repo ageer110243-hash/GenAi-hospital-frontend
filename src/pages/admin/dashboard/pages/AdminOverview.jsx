@@ -1,32 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarCheck, Stethoscope, Users, UserCheck } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import DataTable from '../components/DataTable'
 import StatusBadge from '../components/StatusBadge'
 import UserCell from '../components/UserCell'
-
-// Dummy data (remove when the API is connected)
-const dummyOverview = {
-  stats: {
-    totalDoctors: 128,
-    totalPatients: 2540,
-    todayAppointments: 64,
-    pendingApprovals: 9,
-  },
-  recentAppointments: [
-    { patient: 'Fatima Noor', doctor: 'Dr. Ayesha Khan', time: '10:30 AM', status: 'Confirmed' },
-    { patient: 'Bilal Hussain', doctor: 'Dr. Omar Siddiqui', time: '11:15 AM', status: 'Pending' },
-    { patient: 'Mariam Ali', doctor: 'Dr. Sara Ahmed', time: '12:00 PM', status: 'Completed' },
-    { patient: 'Hassan Raza', doctor: 'Dr. Hamza Raza', time: '01:30 PM', status: 'Cancelled' },
-  ],
-  pendingDoctors: [
-    { _id: '1', name: 'Dr. Imran Shah', specialization: 'Dermatologist' },
-    { _id: '2', name: 'Dr. Noor Fatima', specialization: 'Cardiologist' },
-    { _id: '3', name: 'Dr. Zain Malik', specialization: 'ENT' },
-  ],
-}
-
+import axios from 'axios'
 
 const columns = [
   { key: 'patient', label: 'Patient', render: (r) => <UserCell name={r.patient} /> },
@@ -36,31 +15,76 @@ const columns = [
 ]
 
 const AdminOverview = () => {
-  // eslint-disable-next-line no-unused-vars
-  const [data, setData] = useState(dummyOverview) // dummy data for now
+  const [appointments, setAppointments] = useState([])
+  const [doctors, setDoctors] = useState([])
+  const [patients, setPatients] = useState([])
 
-  // TODO(API): replace the dummy data with a real request.
-  // (add `import axios from 'axios'` and useEffect to the react import)
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const { data } = await axios.get('http://localhost:8000/api/admin/overview', { withCredentials: true })
-  //     setData(data)
-  //   }
-  //   fetchData()
-  // }, [])
+  const getAllAppointment = async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/api/appointment/allApointment", {
+        withCredentials: true
+      })
+      console.log(response)
+      setAppointments(response.data.appointments || [])
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const getAllDoctor = async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/api/doctor/getall-doctors", {
+        withCredentials: true
+      })
+      console.log(response)
+      setDoctors(response.data.doctors || [])
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const getPatient = async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/api/patient/getAll-patient", {
+        withCredentials: true
+      })
+      console.log(response)
+      setPatients(response.data.patients || [])
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  useEffect(() => {
+    getAllAppointment()
+    getAllDoctor()
+    getPatient()
+  }, [])
+
+  // aaj ki appointments
 
 
-  const { stats, recentAppointments, pendingDoctors } = data
+  // table ke liye data (latest 5)
+  const recentAppointments = appointments.slice(0, 5).map((a) => ({
+    _id: a._id,
+    patient: a.patient?.name || 'Unknown',
+    doctor: a.doctor?.name || 'Unknown',
+    time: a.time,
+    status: a.status || 'Pending',
+  }))
+
+  // pending doctors
+  const pendingDoctors = doctors.filter((d) => d.status === 'pending')
 
   return (
     <>
       <PageHeader title="Dashboard overview" subtitle="A quick look at how the hospital is doing today." />
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Stethoscope} label="Total Doctors" value={stats.totalDoctors} note="+4 this month" />
-        <StatCard icon={Users} label="Total Patients" value={stats.totalPatients} note="+120 this month" tone="navy" />
-        <StatCard icon={CalendarCheck} label="Today's Appointments" value={stats.todayAppointments} note="12 pending" tone="gold" />
-        <StatCard icon={UserCheck} label="Pending Approvals" value={stats.pendingApprovals} note="Needs review" tone="red" />
+        <StatCard icon={Stethoscope} label="Total Doctors" value={doctors.length} note="All doctors" />
+        <StatCard icon={Users} label="Total Patients" value={patients.length} note="All patients" tone="navy" />
+        <StatCard icon={CalendarCheck} label="Total Appointments" value={appointments.length} note="Today" tone="gold" />
+        <StatCard icon={UserCheck} label="Pending Approvals" value={pendingDoctors.length} note="Needs review" tone="red" />
       </div>
 
       <div className="mt-8 grid gap-6 xl:grid-cols-3">

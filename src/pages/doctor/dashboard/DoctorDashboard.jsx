@@ -1,4 +1,4 @@
-import { useState} from 'react'
+import { useEffect, useState} from 'react'
 import { NavLink, Outlet, Link , useNavigate} from 'react-router-dom'
 import { LayoutDashboard, Users, CalendarClock, UserCircle, LogOut, Menu, X, Bell, Search } from 'lucide-react'
 import Logo from '../../../components/Logo'
@@ -18,14 +18,34 @@ const links = [
 ]
 
 // TODO(API): replace with the logged-in doctor (name / specialization)
-const user = { name: 'Dr. Ayesha Khan', role: 'Cardiologist' }
+
 
 // Layout: sidebar + top bar. Child pages (./pages) render inside <Outlet />
 const DoctorDashboard = () => {
+  const [user, setUser] = useState({ name: 'Doctor', role: 'Datient' })
   const [open, setOpen] = useState(false) // mobile sidebar
 
  const navigate = useNavigate()
 
+ const getDoctor = async () => {
+  try {
+    const response = await axios.get('http://localhost:8000/api/doctor/profile', {
+      withCredentials: true,
+    })
+    console.log(response)
+
+    const doctor = response.data.doctor || response.data.user
+    if (doctor) {
+      setUser({ name: doctor.name || 'Doctor', role: 'Doctor' })
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+useEffect(()=>{
+ getDoctor()
+},[])
 
 const handleLogout = async () => {
     try {

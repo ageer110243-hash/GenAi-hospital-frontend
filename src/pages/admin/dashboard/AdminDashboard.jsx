@@ -1,10 +1,8 @@
-import { useState } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Stethoscope, Users, CalendarCheck, UserCircle, LogOut, Menu, X, Bell, Search } from 'lucide-react'
 import Logo from '../../../components/Logo'
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
-
 
 // ---------- Admin dashboard settings ----------
 const panelLabel = 'Admin panel'
@@ -19,28 +17,48 @@ const links = [
   { to: '/admin-dashboard/profile', label: 'Profile', icon: UserCircle },
 ]
 
-// TODO(API): replace with the logged-in admin (name / role)
-const user = { name: 'Admin', role: 'Administrator' }
-
 // Layout: sidebar + top bar. Child pages (./pages) render inside <Outlet />
 const AdminDashboard = () => {
   const [open, setOpen] = useState(false) // mobile sidebar
+  const [user, setUser] = useState({ name: 'Admin', role: 'Administrator' })
 
   const navigate = useNavigate()
 
-const handleLogout = async () => {
-  try {
-    const res = await axios.post(
-      'http://localhost:8000/api/admin/logout',
-      {},
-      { withCredentials: true })
+  // get the logged-in admin
+  const getAdmin = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/admin/profile', {
+        withCredentials: true,
+      })
+      console.log(response)
 
-    localStorage.removeItem('role')
-    navigate('/admin-login')
-  } catch (error) {
-    console.log('Logout Error:', error)
+      const admin = response.data.admin || response.data.user
+      if (admin) {
+        setUser({ name: admin.name || 'Admin', role: 'Administrator' })
+      }
+    } catch (error) {
+      console.log(error)
+    }
   }
-}
+
+  useEffect(() => {
+    getAdmin()
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.post(
+        'http://localhost:8000/api/admin/logout',
+        {},
+        { withCredentials: true }
+      )
+
+      localStorage.removeItem('role')
+      navigate('/admin-login')
+    } catch (error) {
+      console.log('Logout Error:', error)
+    }
+  }
 
   return (
     <div className="font-dashboard min-h-screen bg-surface text-navy-900 lg:pl-72">
@@ -95,7 +113,7 @@ const handleLogout = async () => {
         <div className="m-4 rounded-2xl bg-linear-to-br from-brand-700 to-navy-900 p-4 text-white">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-sm font-bold">
-              {user.name[0]}
+              {user.name?.[0]?.toUpperCase()}
             </span>
             <div className="min-w-0 leading-tight">
               <p className="truncate text-sm font-semibold">{user.name}</p>
@@ -143,7 +161,7 @@ const handleLogout = async () => {
               className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white sm:pr-3"
             >
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-800 font-bold text-white">
-                {user.name[0]}
+                {user.name?.[0]?.toUpperCase()}
               </span>
               <div className="hidden leading-tight sm:block">
                 <p className="text-sm font-bold">{user.name}</p>
