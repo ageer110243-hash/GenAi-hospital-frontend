@@ -1,60 +1,80 @@
-import { useState } from 'react'
-import { CalendarCheck, Users, Clock, CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CalendarDays, Users, CheckCircle2, XCircle } from 'lucide-react'
+import axios from 'axios'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import DataTable from '../components/DataTable'
 import StatusBadge from '../components/StatusBadge'
 import UserCell from '../components/UserCell'
 
-// Dummy data (remove when the API is connected)
-const dummyOverview = {
-  stats: { todayAppointments: 12, totalPatients: 340, pendingRequests: 5, completed: 8 },
-  todaySchedule: [
-    { _id: '1', patient: 'Fatima Noor', reason: 'Chest pain', time: '10:30 AM', status: 'Confirmed' },
-    { _id: '2', patient: 'Bilal Hussain', reason: 'Follow-up', time: '11:15 AM', status: 'Pending' },
-    { _id: '3', patient: 'Mariam Ali', reason: 'Routine check-up', time: '12:00 PM', status: 'Completed' },
-    { _id: '4', patient: 'Hassan Raza', reason: 'ECG review', time: '01:30 PM', status: 'Confirmed' },
-  ],
-}
-
+const todayISO = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
 
 const columns = [
-  { key: 'patient', label: 'Patient', render: (r) => <UserCell name={r.patient} /> },
-  { key: 'reason', label: 'Reason' },
-  { key: 'time', label: 'Time' },
+  { key: 'patient', label: 'Patient', render: (r) => <UserCell name={r.patient?.name || 'Unknown'} sub={r.patient?.phone} /> },
+  { key: 'reason', label: 'Reason', render: (r) => <span className="line-clamp-1 max-w-[16rem]">{r.reason}</span> },
+  { key: 'time', label: 'Time', render: (r) => r.time || '—' },
   { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
 ]
 
 const DoctorOverview = () => {
-  // eslint-disable-next-line no-unused-vars
-  const [data, setData] = useState(dummyOverview) // dummy data for now
+  const [appointments, setAppointments] = useState([]) // only THIS doctor's appointments
+  const [doctor, setDoctor] = useState(null)
 
-  // TODO(API): replace the dummy data with a real request.
-  // (add `import axios from 'axios'` and useEffect to the react import)
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const { data } = await axios.get('http://localhost:8000/api/doctor/overview', { withCredentials: true })
-  //     setData(data)
-  //   }
-  //   fetchData()
-  // }, [])
+  // call 1: this doctor's appointments (the backend finds the doctor from the login cookie)
+  const getAppointments = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/appointment/doctor', {
+        withCredentials: true,
+      })
+      setAppointments(response.data.appointments)
+    } catch (error) {
+      console.log(error.response?.data || error.message)
+    }
+  }
 
+  // call 2: the doctor's name for the heading
+  const getDoctorProfile = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/doctor/profile', {
+        withCredentials: true,
+      })
+      setDoctor(response.data.doctor)
+    } catch (error) {
+      console.log(error.response?.data || error.message)
+    }
+  }
 
-  const { stats, todaySchedule } = data
+  useEffect(() => {
+    getAppointments()
+    getDoctorProfile()
+  }, [])
+
+  const count = (status) => appointments.filter((a) => a.status === status).length
+  // one patient can book many times, so count every patient only once
+  const totalPatients = new Set(appointments.map((a) => a.patient?._id).filter(Boolean)).size
+  const todays = appointments.filter((a) => String(a.appointmentDate).slice(0, 10) === todayISO)
 
   return (
     <>
-      <PageHeader title="Welcome back, Doctor" subtitle="Here is your schedule for today." />
+      <PageHeader
+        title={doctor ? `Welcome back, ${doctor.name}` : 'Welcome back'}
+        subtitle="Here is a summary of your appointments."
+      />
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={CalendarCheck} label="Today's Appointments" value={stats.todayAppointments} note="4 remaining" />
-        <StatCard icon={Users} label="Total Patients" value={stats.totalPatients} tone="navy" note="+8 this week" />
-        <StatCard icon={Clock} label="Pending Requests" value={stats.pendingRequests} tone="gold" note="Needs response" />
-        <StatCard icon={CheckCircle2} label="Completed" value={stats.completed} tone="teal" note="Today" />
+        <StatCard
+          icon={CalendarDays}
+          label="Total appointments"
+          value={appointments.length}
+          note={`${count('Pending')} pending · ${count('Completed')} completed`}
+        />
+        <StatCard icon={Users} label="Total patients" value={totalPatients} tone="navy" note="Different patients" />
+        <StatCard icon={CheckCircle2} label="Approved" value={count('Approved')} tone="teal" note="Accepted by you" />
+        <StatCard icon={XCircle} label="Rejected" value={count('Rejected')} tone="red" note="Declined by you" />
       </div>
 
       <h2 className="mb-4 mt-8 text-lg font-bold">Today&apos;s schedule</h2>
-      <DataTable columns={columns} rows={todaySchedule} showToolbar={false} />
+      <DataTable columns={columns} rows={todays} showToolbar={false} />
     </>
   )
 }
